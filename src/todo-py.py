@@ -77,9 +77,9 @@ def planet_mass(mstar,k,P,ecc,i=np.pi/2.):
 # Output:
 # rho -> stellar density
 #-----------------------------------------------------------
-def get_rhostar(P,a):
+def get_rhostar(P,a,rstar):
   P = P * 24. * 3600. # s
-  rho = 3. * np.pi * a**3 / ( G_cgs * P * P)
+  rho = 3. * np.pi * (a/rstar)**3 / ( G_cgs * P * P)
   return rho
 
 
@@ -95,8 +95,8 @@ def get_teq(Tstar,albedo,rstar,a):
 #x and y are the original arrays, z is the vector with the residuals
 def sigma_clip(x,y,z,limit_sigma=5,is_plot=False):
   control = True
-  new_y = list(y)
   new_x = list(x)
+  new_y = list(y) 
   new_z = list(z)
   dummy_x = []
   dummy_y = []
@@ -104,15 +104,15 @@ def sigma_clip(x,y,z,limit_sigma=5,is_plot=False):
   n = 1
   while ( control ):
     sigma = np.std(new_z)
-    for i in range(0,len(new_z)):
+    for i in range(len(new_z)):
       if ( np.abs(new_z[i]) < limit_sigma*sigma ):
         dummy_x.append(new_x[i])
         dummy_y.append(new_y[i])
         dummy_z.append(new_z[i])
     if ( len(dummy_x) == len(new_x) ): #We did not cut, so the sigma clipping is done
       control = False
-    new_y = list(dummy_y)
     new_x = list(dummy_x)
+    new_y = list(dummy_y)
     new_z = list(dummy_z)
     dummy_x = []
     dummy_y = []
@@ -132,7 +132,7 @@ def sigma_clip(x,y,z,limit_sigma=5,is_plot=False):
 def smart_priors():
   #We are using global variables
   global fit_tr, fit_rv
-  global tota_rv_fit, total_tr_fit
+  global total_rv_fit, total_tr_fit
   global min_rv0, max_rv0, v0, min_k, max_k, min_phys_k, max_phys_k
   global min_P, max_P, min_phys_P, max_phys_P, min_t0, max_t0, \
          min_phys_t0, max_phys_t0, min_rp, max_rp, min_phys_rp, \
@@ -148,7 +148,7 @@ def smart_priors():
     max_rv0 = [None]*nt
     min_phys_rv0 = [None]*nt
     max_phys_rv0 = [None]*nt
-    for o in range(0,nt):
+    for o in range(nt):
         min_rv0[o] = min(rv_all[o]) - 1.0e-2
         max_rv0[o] = max(rv_all[o]) + 1.0e-2
         min_phys_rv0[o] = min(rv_all[o]) - 1.e-2
@@ -160,7 +160,7 @@ def smart_priors():
     max_flux = max(megay)
     min_phys_rp =[None]*nplanets
     max_phys_rp =[None]*nplanets
-    for o in range(0,nplanets):
+    for o in range(nplanets):
       min_phys_rp[o] = 0.0
       max_phys_rp[o] = max_flux - min_flux
       max_phys_rp[o] = 10.*np.sqrt(max_phys_rp[o])
@@ -189,7 +189,7 @@ def create_transit_data(time,flux,errs,planet=0,span=0.0):
   t_inicial = T0 - span/2
 
   folded_t = list(time)
-  for o in range(0,len(time)):
+  for o in range(len(time)):
     folded_t[o] = int( ( time[o] - t_inicial ) / P )
     folded_t[o] = time[o] - folded_t[o] * P
     folded_t[o] = folded_t[o] - T0
@@ -199,7 +199,7 @@ def create_transit_data(time,flux,errs,planet=0,span=0.0):
   yt = []
   et = []
 
-  for o in range(0,len(time)):
+  for o in range(len(time)):
       if ( folded_t[o] > - span/2 and folded_t[o] < span/2 ):
           lt.append(time[o])
           xt.append(folded_t[o])
