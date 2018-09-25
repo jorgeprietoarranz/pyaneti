@@ -187,7 +187,9 @@ else:
 if ( len(span_tr) == 1 and nplanets > 1): #The user did not change this option in input_file.py
   span_tr = [0.0]*nplanets
 
-#CHECK WHAT WE HAVE TO FIT
+#-----------------------------------------------------------
+# CHECK WHAT WE HAVE TO FIT
+#-----------------------------------------------------------
 #If we are not going to fit RV or TR data, let us turn off the variables
 #for the given case
 for o in range(0,nplanets):
