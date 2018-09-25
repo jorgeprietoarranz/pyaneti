@@ -41,12 +41,12 @@ execfile(inf_name)
 #Prepare data
 execfile('src/prepare_data.py')
 
-#Create ouput directory
+#Create output directory
 outdir = outdir + star + '_out'
 if not os.path.exists(outdir):
   os.makedirs(outdir)
 
-#Obtain smart priors based on iput data
+#Obtain smart priors based on input data
 if (is_smart_priors ):
   smart_priors()
 
