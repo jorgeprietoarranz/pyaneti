@@ -82,17 +82,19 @@ def get_rhostar(P,a):
   rho = 3. * np.pi * a**3 / ( G_cgs * P * P)
   return rho
 
-
 #-----------------------------------------------------------
-#Return the equilibrium temeprature given the stellar temperature
-#albedo, stellar radius and distance to the star
+# Return the equilibrium temperature given the stellar temperature,
+# planet albedo, stellar radius and distance to the star
+#-----------------------------------------------------------
 def get_teq(Tstar,albedo,rstar,a):
   Tp = Tstar*( 1.0 - albedo)**(0.25)
   Tp = (rstar/2.0/a)**(0.5) * Tp
   return Tp
 
-#Sigma clipping functions copied from exotrending
-#x and y are the original arrays, z is the vector with the residuals
+#-----------------------------------------------------------
+# Sigma clipping functions copied from exotrending
+# x and y are the original arrays, z is the vector with the residuals
+#-----------------------------------------------------------
 def sigma_clip(x,y,z,limit_sigma=5,is_plot=False):
   control = True
   new_y = list(y)
@@ -126,8 +128,8 @@ def sigma_clip(x,y,z,limit_sigma=5,is_plot=False):
   return new_x, new_y
 
 #-----------------------------------------------------------
-#  Smart priors, get the best values of the physical and
-#  priors limits
+# Smart priors, get the best values of the physical and
+# priors limits
 #-----------------------------------------------------------
 def smart_priors():
   #We are using global variables
@@ -176,7 +178,9 @@ def smart_priors():
       #If we gave a worst prior for planet size, take a better
       max_rp[o] = min([max_rp[o],max_phys_rp[o]])
 
-#Create function to create xt vectors
+#-----------------------------------------------------------
+# Create function to create xt vectors
+#-----------------------------------------------------------
 def create_transit_data(time,flux,errs,planet=0,span=0.0):
   global trt_vec, P_vec, T0_vec #vector with the transit durations calculated in print_values.py
 
@@ -275,7 +279,8 @@ def find_vals_perc(x,sf=1.0,prob=68.3):
 
   return med, mine, maxe
 
-
+#-----------------------------------------------------------
+# This routine calculates...
 #-----------------------------------------------------------
 def best_value(vector,loglike,cual):
     if ( cual == 'median'):
@@ -288,10 +293,10 @@ def best_value(vector,loglike,cual):
 
     return result
 
-
 #-----------------------------------------------------------
-#This routine calculates the mode of a vector
-#The vector in divided in bins and count the maximum value
+# This routine calculates the mode of a vector
+# The vector in divided in bins and count the maximum value
+#-----------------------------------------------------------
 def my_mode(vector,bins=50):
   dx = np.max(vector) - np.min(vector)
   dx = dx / bins
@@ -317,6 +322,8 @@ def my_mode(vector,bins=50):
   return maximo
 
 #-----------------------------------------------------------
+# This routine returns...
+#-----------------------------------------------------------
 def mode_and_99(vector):
     a = my_mode(vector)
     d, b, c = find_vals_perc(vector, sf=1.0, prob=99)
@@ -324,7 +331,8 @@ def mode_and_99(vector):
     return a,b,c
 
 #-----------------------------------------------------------
-
+# This routine calculates...
+#-----------------------------------------------------------
 def good_clustering(chi2,chain_lab,nconv,nwalkers):
   #Let us find the good indixes for the cluster
   #We have n walkers
@@ -372,9 +380,9 @@ def good_clustering(chi2,chain_lab,nconv,nwalkers):
 
   return good_index, new_nwalkers
 
-
 #-----------------------------------------------------------
-#This routine assumes that all the chains are organized from 0 to nwakers-1
+# This routine assumes that all the chains are organized from 0 to nwakers-1
+#-----------------------------------------------------------
 def good_clustering_fast(chi2,nconv,nwalkers):
   #Let us find the good indixes for the cluster
   #We have n walkers
@@ -407,9 +415,9 @@ def good_clustering_fast(chi2,nconv,nwalkers):
   print 'Final number of chains:', new_nwalkers
   return good_chain, new_nwalkers
 
-
 #-----------------------------------------------------------
-
+# This routine...
+#-----------------------------------------------------------
 def clustering(par,good_index):
 
   cluster_par = np.zeros(len(good_index))
@@ -420,7 +428,8 @@ def clustering(par,good_index):
   return cluster_par
 
 #-----------------------------------------------------------
-
+# This routine...
+#-----------------------------------------------------------
 def clustering_fast(par,good_index,nconv):
 
   dummy_par = []
@@ -437,6 +446,8 @@ def clustering_fast(par,good_index,nconv):
 
   return cluster_par
 
+#-----------------------------------------------------------
+# This routine prints out...
 #-----------------------------------------------------------
 def print_values(vector,var,vartex,unit,unittex):
 #fname is the variable where we are writting the numbers
