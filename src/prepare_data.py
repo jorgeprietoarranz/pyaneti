@@ -7,7 +7,7 @@
 
 nconv    = niter
 nwalkers = nchains
-#What transit data are we fitting
+# What transit data are we fitting
 if ( lc_data == 'kepler_lc' ):
   n_cad = 10
   t_cad = 29.425 / 60. / 24.0 #days
@@ -15,7 +15,7 @@ elif ( lc_data == 'kepler_sc' ):
   n_cad = 1
   t_cad = 1.5 / 60. / 24.0 #days
 elif ( lc_data == 'free' ):
-  #values given by the user
+  # Values given by the user
   n_cad = n_cad
   t_cad = t_cad
 
@@ -23,16 +23,16 @@ elif ( lc_data == 'free' ):
 #                         RV DATA
 #-----------------------------------------------------------
 
-#Let us check the kind of variable
+# Let us check the kind of variable
 nplanets_rv = 0
-for o in range(0,len(fit_rv)):
+for o in range(len(fit_rv)):
   nplanets_rv = nplanets_rv + int(fit_rv[o])
 
-#Let us ensure that we want to fit rv data
+# Let us ensure that we want to fit rv data
 if ( nplanets_rv > 0 ):
 
-  #Read the data file
-  #time, RV, errors, and Telescope label
+  # Read the data file
+  # time, RV, errors, and Telescope label
   time,rv,err,tspe = np.loadtxt('inpy/'+star+'/'+fname_rv[0],usecols=(0,1,2,3), \
   dtype={'names': ('time', 'rv', 'err','telescope'), \
     'formats': ('float', 'float', 'float', 'S10')}, \
@@ -40,53 +40,51 @@ if ( nplanets_rv > 0 ):
   if ( is_special_jitter ):
     sjitter = np.loadtxt('inpy/'+star+'/'+fname_rv[0],usecols=(4),dtype=str,unpack=True)
 
-
-
-  #These lists have lists with data for
-  #the different telescopes
+  # These lists have lists with data for
+  # the different telescopes
   time_all = []
   rv_all   = []
   errs_all = []
 
-  #Number of telescopes
+  # Number of telescopes
   nt = len(telescopes)
 
   if ( nt < 1 ):
-    print 'Please, indicate the telescope labels!'
+    print('Please, indicate the telescope labels!')
     sys.exit('')
 
-  #Separate the data for each telescope and create labels
-  for i in range(0,nt):
+  # Separate the data for each telescope and create labels
+  for i in range(nt):
     time_dum = []
     rv_dum   = []
     errs_dum = []
-    for j in range(0,len(tspe)):
+    for j in range(len(tspe)):
       if (tspe[j] == telescopes[i]):
         time_dum.append(time[j])
         rv_dum.append(rv[j])
         errs_dum.append(err[j])
-  #The *all variables are lists of lists, each list constains
+  # The *all variables are lists of lists, each list constains
   # a list with the data of each telescope
     time_all.append(time_dum)
     rv_all.append(rv_dum)
     errs_all.append(errs_dum)
 
-  #The mega* variables contains all the data
-  #All this is neccesary because you do not have
-  #the same number of data for each telescope
+  # The mega* variables contains all the data
+  # All this is neccesary because you do not have
+  # the same number of data for each telescope
   mega_rv   = []
   mega_time = []
   mega_err  = []
   tlab      = []
   jrvlab    = []
-  #create mega with data of all telescopes
-  for i in range(0,nt):
-    #fill the mega variable with all the data of the
-    #telescope i
-    for j in range(0,len(rv_all[i])):
-      #tlab has the label of the telescope (an integer)
-      #this is useful because matches with the index of
-      #the mega variables
+  # Create mega with data of all telescopes
+  for i in range(nt):
+    # Fill the mega variable with all the data of the
+    # telescope i
+    for j in range(len(rv_all[i])):
+      # tlab has the label of the telescope (an integer)
+      # This is useful because matches with the index of
+      # the mega variables
       tlab.append(i)
       mega_rv.append(rv_all[i][j])
       mega_time.append(time_all[i][j])
@@ -94,16 +92,14 @@ if ( nplanets_rv > 0 ):
 
   if ( is_special_jitter ):
     n_jrv = len(jrvvec)
-    for o in range(0,len(tlab)):
-      for ndum in range(0,len(jrvvec)):
-        if (sjitter[o][0] == jrvvec[ndum][0] ):
+    for o in range(len(tlab)):
+      for ndum in range(len(jrvvec)):
+        if (sjitter[o][0] == jrvvec[ndum][0]):
           jrvlab.append(ndum)
           break
   else:
     jrvlab = list(tlab)
     n_jrv = nt
-
-
 
   total_rv_fit = True
 
@@ -118,33 +114,32 @@ else:
   total_rv_fit = False
   is_jitter_rv = False
 
-#RV DATA READY
+# RV DATA READY
+
 
 #-----------------------------------------------------------
 #                     TRANSIT DATA
 #-----------------------------------------------------------
 
-#Let us check the kind of variable
+# Let us check the kind of variable
 nplanets_tr = 0
-for o in range(0,len(fit_tr)):
+for o in range(len(fit_tr)):
   nplanets_tr = nplanets_tr + int(fit_tr[o])
 
 if ( nplanets_tr > 0 ):
 
-  #Each transit planet hasa different file
+  # Each transit planet has a different file
   myn = len(fname_tr)
   xt= [None]*myn
   yt= [None]*myn
   et= [None]*myn
 
-
-  for o in range(0,myn):
-
+  for o in range(myn):
     filename = 'inpy/'+star+'/'+fname_tr[o]
-    if ( my_tr_err == 0 ): #The error bars come from the input file
+    if ( my_tr_err == 0 ): # The error bars come from the input file
         dummyd,dummyf,dummye = np.loadtxt(filename,usecols=columns_tr, \
         comments='#',unpack=True)
-    else: #The error bars are given in the input
+    else: # The error bars are given in the default.py file
         dummyd,dummyf = np.loadtxt(filename,usecols=[0,1], \
         comments='#',unpack=True)
         dummye = [my_tr_err]*len(dummyd)
@@ -155,16 +150,16 @@ if ( nplanets_tr > 0 ):
     wflux = dummyf
     errs  = dummye
 
-    #Each element of these lists will have the information
-    #of a given transit
+    # Each element of these lists will have the information
+    # of a given transit
     xt[o]= hdate
     yt[o]= wflux
     et[o]= errs
 
 
-  #Let us put together the information of all the arrays
-  #the mega* lists have the data of all the transits
-  #in 1D array
+  # Let us put together the information of all the arrays
+  # The mega* lists have the data of all the transits
+  # in 1D array
   megax = np.concatenate(xt)
   megay = np.concatenate(yt)
   megae = np.concatenate(et)
@@ -182,15 +177,20 @@ else:
   fit_q1 = 'f'
   fit_q2 = 'f'
 
-#TRANSIT DATA READY
-#Take care with span_tr
-if ( len(span_tr) == 1 and nplanets > 1): #The user did not change this option in input_file.py
+# TRANSIT DATA READY
+
+# Take care with span_tr
+if (len(span_tr) == 1 and nplanets > 1): # The user did not change this option in input_file.py
   span_tr = [0.0]*nplanets
 
+  
+#-----------------------------------------------------------
 #CHECK WHAT WE HAVE TO FIT
-#If we are not going to fit RV or TR data, let us turn off the variables
-#for the given case
-for o in range(0,nplanets):
+#-----------------------------------------------------------
+
+# If we are not going to fit RV or TR data, let us turn off the variables
+# for the given case
+for o in range(nplanets):
     if (fit_tr[o] == False ):
       fit_rp[o] = 'f'
       min_rp[o] = 0.0
@@ -200,11 +200,11 @@ for o in range(0,nplanets):
       else:
         fit_b[o]  = 'f'
         min_b[o]  = 0.0
-      fit_a[o]  = 'f'
+      fit_a[o] = 'f'
     if (fit_rv[o] == False ):
-      fit_k[o]  = 'f'
+      fit_k[o] = 'f'
 
-#Let us turn off velocity offset for a pure TR fit
+# Let us turn off velocity offset for a pure TR fit
 if ( not total_rv_fit ):
   fit_v0 = 'f'
   nt = 1
@@ -216,7 +216,7 @@ if ( not total_rv_fit ):
   telescopes = ['O']
   telescopes_labels = ['']
 
-if ( is_den_a ): #For a multiplanet system the density has to be the same
+if ( is_den_a ): # For a multiplanet system the density has to be the same
   if ( nplanets > 1 ):
     for o in range(1,nplanets):
       fit_a[o] = 'f'
