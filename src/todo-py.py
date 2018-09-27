@@ -10,27 +10,28 @@ import matplotlib.pyplot as plt
 import sys
 
 #-----------------------------------------------------------
-#This function returns the phase of a temporal array given
-#the period
-#input: jd -> time vector in julian date to be escaled (days)
-# T0 -> time zero of the transit (days)
-# P  -> planet orbital period (days)
-#output: x -> vector with the scaled values (days)
+# This function returns the phase of a temporal array given
+# the period
+# input: jd -> time vector in julian date to be escaled (days)
+#        T0 -> time zero of the transit (days)
+#        P  -> planet orbital period (days)
+# output: x -> vector with the scaled values (days)
 #-----------------------------------------------------------
 def scale_period(jd,Tp,P):
   x = [None]*len(jd)
   for i in range(len(jd)):
-    x[i] = ( ( jd[i] - Tp ) % P ) /  P
+    x[i] = ( ( jd[i] - Tp ) % P ) / P
   return x
 
 #-----------------------------------------------------------
-#planet_mass -> gives the planet mass from RV parameters
-#input: mstar -> mass of the orbited star (solar masses)
-# k    -> semi-amplitude of the RV (m/s)
-# P    -> planet orbital period (days)
-# ecc  -> orbit eccentricity (no unit)
-# i    -> orbit inclination (radians)
-#output: mp -> planet mass (solar masses)
+# planet_mass -> gives the planet mass from RV parameters
+# input: mstar -> mass of the orbited star (solar masses)
+#        k     -> semi-amplitude of the RV (m/s)
+#        P     -> planet orbital period (days)
+#        ecc   -> orbit eccentricity (no unit)
+#        i     -> orbit inclination (radians)
+# output: mp -> planet mass (solar masses)
+# 
 # WARNING: the defalut value for i is pi/2 (90 degrees),
 # if you do not know the orbit inclination, this function
 # computes the planet mass times sin(i)
@@ -39,26 +40,25 @@ def planet_mass(mstar,k,P,ecc,i=np.pi/2.):
 
   P = P * 24. * 3600. # s
 
-  #Let us make a guess by assuming mstar >> mp
+  # Let us make a guess by assuming mstar >> mp
   unoe = np.sqrt(1.-ecc*ecc) 
-  mpsin = k * ( 2. * np.pi * S_GM_SI / P)**(-1./3.)  * \
-  mstar**(2./3.) * unoe
+  mpsin = k * ( 2. * np.pi * S_GM_SI / P)**(-1./3.) * mstar**(2./3.) * unoe
   mp = mpsin / np.sin(i)
 
-  #find the mass by solving the mass function, 
-  #this is useful for stars orbited by other stars
+  # Find the mass by solving the mass function, 
+  # this is useful for stars orbited by other stars
 
   f = [1.0]*len(P)
   cte = - unoe**3 * P * k**3 / 2. / np.pi / S_GM_SI 
   sini = np.sin(i)
   flag = True
-  #Start Newton-Raphson algorithm
+  # Start Newton-Raphson algorithm
   while ( flag ):
     f = cte + (mp * sini )**3 / ( mstar + mp )**2
     df= mp**2 * sini**3 / ( mstar + mp )**2 * ( 3. - 2. * mp / (mstar + mp ) )
     mp = mp - f/df
     for j in range(0,len(P)):
-      #check that all the array elemets have converged
+      # Check that all the array elements have converged
       if ( f[j] > 1.e-8 ):
         flag = True
         break
@@ -69,30 +69,30 @@ def planet_mass(mstar,k,P,ecc,i=np.pi/2.):
 
 #-----------------------------------------------------------
 # This routine calculates the stellar density
-# Based on eq. 30 from Winn., 2014
-# Assuming the companion is too small
-# Input:
-# P -> Period
-# a -> semi-major axis
-# Output:
-# rho -> stellar density
+# based on eq. 30 from Winn., 2014
+# assuming the companion is too small
+# input: P -> Period
+#        a -> semi-major axis (in stellar radius units)
+# output: rho -> stellar density
 #-----------------------------------------------------------
 def get_rhostar(P,a):
   P = P * 24. * 3600. # s
   rho = 3. * np.pi * a**3 / ( G_cgs * P * P)
   return rho
 
-
 #-----------------------------------------------------------
-#Return the equilibrium temeprature given the stellar temperature
-#albedo, stellar radius and distance to the star
+# Return the equilibrium temperature given the stellar temperature
+# planet albedo, stellar radius and distance to the star
+#-----------------------------------------------------------
 def get_teq(Tstar,albedo,rstar,a):
   Tp = Tstar*( 1.0 - albedo)**(0.25)
-  Tp = (rstar/2.0/a)**(0.5) * Tp
+  Tp = Tp * (rstar/2.0/a)**(0.5)
   return Tp
 
-#Sigma clipping functions copied from exotrending
-#x and y are the original arrays, z is the vector with the residuals
+#-----------------------------------------------------------
+# Sigma clipping functions copied from exotrending
+# x and y are the original arrays, z is the vector with the residuals
+#-----------------------------------------------------------
 def sigma_clip(x,y,z,limit_sigma=5,is_plot=False):
   control = True
   new_y = list(y)
@@ -109,7 +109,7 @@ def sigma_clip(x,y,z,limit_sigma=5,is_plot=False):
         dummy_x.append(new_x[i])
         dummy_y.append(new_y[i])
         dummy_z.append(new_z[i])
-    if ( len(dummy_x) == len(new_x) ): #We did not cut, so the sigma clipping is done
+    if ( len(dummy_x) == len(new_x) ): # We did not cut, so the sigma clipping is done
       control = False
     new_y = list(dummy_y)
     new_x = list(dummy_x)
@@ -126,40 +126,61 @@ def sigma_clip(x,y,z,limit_sigma=5,is_plot=False):
   return new_x, new_y
 
 #-----------------------------------------------------------
-#  Smart priors, get the best values of the physical and
-#  priors limits
+# Smart priors, get the best values of the physical and
+# priors limits
 #-----------------------------------------------------------
 def smart_priors():
-  #We are using global variables
+  # We are using global variables
   global fit_tr, fit_rv
-  global tota_rv_fit, total_tr_fit
-  global min_rv0, max_rv0, v0, min_k, max_k
-  global min_P, max_P, min_t0, max_t0, \
-         min_rp, max_rp, \
-         min_i, max_i
+  global total_rv_fit, total_tr_fit
+  global min_rv0, max_rv0, v0, min_k, max_k, min_phys_k, max_phys_k
+  global min_P, max_P, min_phys_P, max_phys_P, min_t0, max_t0, \
+         min_phys_t0, max_phys_t0, min_rp, max_rp, min_phys_rp, max_phys_rp, \
+         min_i, max_i, min_phys_i, max_phys_i, min_phys_rv0, max_phys_rv0
 
-  #Let us try to do a guess for the init values
+  # Let us try to do a guess for the init values
   if ( total_rv_fit ):
 
-    #Estimate systemic velocity priors and limits from data
-    #The systemic velocity value of all the telescope should
-    #be between the smallest and larger RV datapoint
+    # Estimate systemic velocity priors and limits from data
+    # The systemic velocity value of all the telescope should
+    # be between the smallest and largest RV datapoints
     min_rv0 = [None]*nt
     max_rv0 = [None]*nt
-    for o in range(0,nt):
+    min_phys_rv0 = [None]*nt
+    max_phys_rv0 = [None]*nt
+    for o in range(nt):
         if (fit_v0 == 'u'):
-          min_rv0[o] = min(rv_all[o]) - 1.0e-1
-          max_rv0[o] = max(rv_all[o]) + 1.0e-1
-          if is_linear_trend == 'u':
-            min_rv0[o] = min(rv_all[o]) - 1.0
-            max_rv0[o] = max(rv_all[o]) + 1.0
+          min_rv0[o] = min(rv_all[o]) - 1.0e-2
+          max_rv0[o] = max(rv_all[o]) + 1.0e-2
+          min_phys_rv0[o] = min(rv_all[o]) - 1.0e-2
+          max_phys_rv0[o] = max(rv_all[o]) + 1.0e-2
         else:
           min_rv0[o] = 0.0
           max_rv0[o] = 0.0
+          min_phys_rv0[o] = 0.0
+          max_phys_rv0[o] = 0.0
 
-#Create function to create xt vectors
+  if ( total_tr_fit ):
+
+    min_flux = min(megay)
+    max_flux = max(megay)
+    min_phys_rp =[None]*nplanets
+    max_phys_rp =[None]*nplanets
+    for o in range(nplanets):
+      min_phys_rp[o] = 0.0
+      max_phys_rp[o] = max_flux - min_flux
+      max_phys_rp[o] = 10.*np.sqrt(max_phys_rp[o])
+      max_phys_rp[o] = min(1.0,max_phys_rp[o])
+      # Let us assume that the smallest planet in the data
+      # is around 10% of the maximum depth
+      # If we gave a worst prior for planet size, take a better
+      max_rp[o] = min([max_rp[o],max_phys_rp[o]])
+
+#-----------------------------------------------------------
+# Function to create xt vectors for each planet
+#-----------------------------------------------------------
 def create_transit_data(time,flux,errs,planet=0,span=0.0):
-  global trt_vec, P_vec, T0_vec #vector with the transit durations calculated in print_values.py
+  global trt_vec, P_vec, T0_vec # vector with the transit durations calculated in print_values() function
 
   P  = best_value(P_vec[planet],maxloglike,get_value)
   T0 = best_value(T0_vec[planet],maxloglike,get_value)
@@ -167,16 +188,16 @@ def create_transit_data(time,flux,errs,planet=0,span=0.0):
   tt = tt/24.0
 
   if ( span < 1e-5 ):
-    #We have to calculate things
+    # We have to calculate things
     span = 3*tt
 #  else:
     #We have to use the span given by the user
 
-  #Let us fold the data to the period
+  # Let us fold the data to the period
   t_inicial = T0 - span/2
 
   folded_t = list(time)
-  for o in range(0,len(time)):
+  for o in range(len(time)):
     folded_t[o] = int( ( time[o] - t_inicial ) / P )
     folded_t[o] = time[o] - folded_t[o] * P
     folded_t[o] = folded_t[o] - T0
@@ -355,6 +376,7 @@ def good_clustering(chi2,chain_lab,nconv,nwalkers):
 
 
 #-----------------------------------------------------------
+#This routine assumes that all the chains are organized from 0 to nwakers-1
 def good_clustering_fast(chi2,nconv,nwalkers):
   #Let us find the good indixes for the cluster
   #We have n walkers
@@ -387,39 +409,6 @@ def good_clustering_fast(chi2,nconv,nwalkers):
   print 'Final number of chains:', new_nwalkers
   return good_chain, new_nwalkers
 
-
-def good_clustering_likelihood(like,nconv,nwalkers):
-  #Let us find the good indixes for the cluster
-  #We have n walkers
-
-  print 'STARTING CHAIN CLUSTERING'
-  print 'Initial number of chains:', nwalkers
-
-  #This variable will have each walker information
-  like_walkers = [None]*nwalkers
-  like_mean = [None]*nwalkers
-  for i in range (0,nwalkers):
-   like_walkers[i] = like[i::nconv]
-
- #The mean of each walker
-  for i in range (0,nwalkers):
-    like_mean[i] = np.mean(like_walkers[i])
-
-  #get the minimum chi2
-  total_max = max(like_mean)
-
-  good_chain = []
-  #Let us kill all the walkers 5 times the minimum
-  for i in range(0,nwalkers):
-    if ( like_mean[i] > total_max * 0.99 ):
-      #We are saving the good chain labels
-      good_chain.append(i)
-
-  new_nwalkers = len(good_chain)
-
-  print 'Final number of chains:', new_nwalkers
-
-  return good_chain, new_nwalkers
 
 #-----------------------------------------------------------
 
@@ -470,18 +459,17 @@ def print_values(vector,var,vartex,unit,unittex):
 #-----------------------------------------------------------
 def joint_fit():
   global fit_all, fit_ldc, fit_rvs, nt
-  global a_from_kepler, mstar_mean, rstar_mean, mstar_sigma_rstar_sigma
+  global a_from_kepler, mstar_mean, rstar_mean, mstar_sigma, rstar_sigma
   global is_log_P, is_ew, is_b_factor, is_log_k, is_log_rv0
-  global fit_t0, fit_P, fit_e, fit_w, fit_i, fit_a,fit_q1, fit_q2, fit_rp, fit_k,fit_v0
-  global T0,P,e,w,ii,a,q1,q2,rp,k0,alpha,beta, v0
-  global min_t0, max_t0, min_P, max_P, min_e, max_e, min_w, max_w, min_i, max_i, min_a,\
-         max_a, min_q1, max_q1, min_q1, max_q1, min_rp, max_rp, min_k, max_k, min_alpha, max_alpha, \
-         min_beta, max_beta, min_rv0, max_rv0
-  global vari,chi2,chi2red,t0o,Po,eo,wo,io,ao,q1o,q2o,rpo,ko,alphao,betao,vo, what_fit
+  global fit_t0, fit_P, fit_e, fit_w, fit_i, fit_a, fit_rp, fit_k, fit_v0, fit_q1, fit_q2
+  global T0, P, e, w, ii, a, rp, k0, v0, q1, q2, alpha, beta
+  global min_t0, max_t0, min_P, max_P, min_e, max_e, min_w, max_w, min_i, max_i, \
+         min_a, max_a, min_rp, max_rp, min_k, max_k, min_rv0, max_rv0, \
+         min_q1, max_q1, min_q2, max_q2, min_alpha, max_alpha, min_beta, max_beta 
+  global vari, chi2, chi2red, t0o, Po, eo, wo, io, ao, rpo, ko, vo, \ 
+         q1o, q2o, alphao, betao, what_fit
   global new_nwalkers, good_index, nwalkers
   global jrvo, jtro, total_fit_flag, flags
-  global limits, priorf, priorl, limits_ldc, limits_rvs
-
 
   if ( is_ew ):
     min_e = min_ew1
@@ -496,59 +484,61 @@ def joint_fit():
     max_i = max_b
     fit_i = fit_b
 
-  fit_all = [None]*8*nplanets
-  for o in range(0,nplanets):
-    fit_all[o*8:(o+1)*8] = [fit_t0[o],fit_P[o],fit_e[o],fit_w[o], \
-                            fit_i[o],fit_a[o], fit_rp[o], fit_k[o] ]
+  fit_all = [None]*8*nplanets # 8 parameters per planet: T0, P, e, w, ii, a, rp, k0
+  for o in range(nplanets):
+    fit_all[o*8:(o+1)*8] = [fit_t0[o], fit_P[o], fit_e[o], fit_w[o], \
+                            fit_i[o],  fit_a[o], fit_rp[o],fit_k[o] ]
 
   fit_rvs = []
-  for o in range(0,nt):
+  for o in range(nt):
     fit_rvs.append(fit_v0)
 
   fit_ldc = [fit_q1, fit_q2]
 
   fit_trends = [is_linear_trend,is_quadratic_trend]
 
-  #Let us check what do we want to fit
+  # Let us check what do we want to fit
   total_fit_flag = [ total_rv_fit, total_tr_fit ]
 
-  flags = [is_log_P,is_ew,is_b_factor,is_den_a,is_log_k,is_log_rv0]
-
-
-  vec_rv0_limits = []
-  for m in range(0,nt):
-    vec_rv0_limits.append(min_rv0[m])
-    vec_rv0_limits.append(max_rv0[m])
-
-  dummy_lims = [None]*8*2*nplanets
-
-  for o in range(0,nplanets):
-
-    dummy_lims[o*8*2:(o+1)*8*2 ] = \
-    [ min_t0[o], max_t0[o], min_P[o], max_P[o], min_e[o], max_e[o], min_w[o], max_w[o] \
-    , min_i[o], max_i[o], min_a[o], max_a[o], min_rp[o], max_rp[o], min_k[o], max_k[o] ]
-
-  limits = dummy_lims
-
-  limits_rvs = vec_rv0_limits
-
-  limits_ldc = [ min_q1, max_q1, min_q2, max_q2]
-
-  stellar_pars = [mstar_mean,mstar_sigma,rstar_mean,rstar_sigma]
-  is_jitter = [is_jitter_rv, is_jitter_tr]
+  flags = [is_log_P, is_ew, is_b_factor, is_den_a, is_log_k, is_log_rv0]
 
   if ( method == 'mcmc' ):
-
-    #Ensure nwalkers is divisible by 2
+    # Ensure nwalkers is divisible by 2
     if ( nwalkers%2 != 0):
          nwalkers = nwalkers + 1
 
+    vec_rv0_limits = []
+#    vec_rv0_phys_limits = []
+    for m in range(nt):
+      vec_rv0_limits.append(min_rv0[m])
+      vec_rv0_limits.append(max_rv0[m])
+
+    dummy_lims = [None]*8*2*nplanets
+    dummy_lims_physical = [None]*8*2*nplanets
+
+    for o in range(0,nplanets):
+      dummy_lims[o*8*2:(o+1)*8*2 ] = \
+      [ min_t0[o], max_t0[o], min_P[o], max_P[o], min_e[o], max_e[o], min_w[o], max_w[o] \
+      , min_i[o], max_i[o], min_a[o], max_a[o], min_rp[o], max_rp[o], min_k[o], max_k[o] ]
+
+    limits = dummy_lims
+
+    limits_rvs = vec_rv0_limits
+
+    limits_ldc = [ min_q1, max_q1, min_q2, max_q2]
+
+    stellar_pars = [mstar_mean,mstar_sigma, rstar_mean,rstar_sigma]
+    is_jitter = [is_jitter_rv, is_jitter_tr]
+
     pti.mcmc_stretch_move(\
-    mega_time,mega_rv,megax,megay,mega_err,megae, \
-    tlab,jrvlab,stellar_pars,a_from_kepler,\
-    flags,total_fit_flag,is_jitter,fit_all,fit_rvs,fit_ldc,fit_trends, \
-    nwalkers,maxi,thin_factor,nconv, limits, limits_rvs, \
-    limits_ldc,n_cad, t_cad, npl=nplanets,n_tel=nt,n_jrv=n_jrv)
+      mega_time,mega_rv,megax,megay,mega_err,megae,tlab,jrvlab, \
+      stellar_pars,a_from_kepler, \
+      flags,total_fit_flag,is_jitter, \
+      fit_all,fit_rvs,fit_ldc,fit_trends, \
+      nwalkers,maxi,thin_factor,nconv, \
+      limits, limits_rvs, limits_ldc, \
+      n_cad, t_cad, \
+      npl=nplanets,n_tel=nt,n_jrv=n_jrv)
 
   elif ( method == 'plot' ):
     print 'I will only print the values and generate the plot'
@@ -624,12 +614,11 @@ def print_init():
   oif.write ('------------------------------\n')
   oif.write ('q1 = %s[ %4.4f , %4.4f ]\n' %(fit_q1,min_q1,max_q1))
   oif.write ('q2 = %s[ %4.4f , %4.4f ]\n' %(fit_q2,min_q2,max_q2))
-  for m in range(0,nt):
+  for m in range(nt):
     oif.write ('%s = %s[ %4.4f , %4.4f ]\n' %(telescopes_labels[m],fit_v0,min_rv0[m],max_rv0[m]))
   oif.write ('==============================\n')
-
   oif.close()
-  dummy_file = open(out_init_file)
-  for line in dummy_file:
-    print line,
-  dummy_file.close()
+  
+  with open(out_init_file) as f:
+    for line in f:
+      print(line)
