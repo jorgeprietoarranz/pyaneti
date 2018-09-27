@@ -17,36 +17,36 @@ import pyaneti as pti #FORTRAN module
 #                   INITIALIZATION
 #-------------------------------------------------------------
 
-#Load the input file
-#You have to run the program as ./pyaneti star_name
+# Load the input file
+# You have to run the program as ./pyaneti.py star_name
 star = str(sys.argv[1])
 
-#Create path to the input_fit.py file
+# Create path to the input_fit.py file
 inf_name = 'inpy/'+star+'/input_fit.py'
 
-#Did you create an input_fit.py file?
+# Did you create an input_fit.py file?
 if ( not os.path.isfile( inf_name ) ):
   print 'You have not created', inf_name
   sys.exit()
 
-#Read the file with all the python functions
+# Read the file with all the python functions
 execfile('src/todo-py.py')
 
-#Read the file with the default values
+# Read the file with the default values
 execfile('src/default.py')
 
-#Read input file
+# Read input file
 execfile(inf_name)
 
-#Prepare data
+# Prepare data
 execfile('src/prepare_data.py')
 
-#Create ouput directory
+# Create output directory
 outdir = outdir + star + '_out'
 if not os.path.exists(outdir):
   os.makedirs(outdir)
 
-#Obtain smart priors based on iput data
+# Obtain smart priors based on input data
 if (is_smart_priors ):
   smart_priors()
 
