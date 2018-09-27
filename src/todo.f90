@@ -7,7 +7,10 @@
 !              Date --> Feb  2016, Oscar Barragán
 !------------------------------------------------------------
 
-!http://stackoverflow.com/questions/18754438/generating-random-numbers-in-a-fortran-module
+!------------------------------------------------------------
+! This subroutine...
+!------------------------------------------------------------
+! http://stackoverflow.com/questions/18754438/generating-random-numbers-in-a-fortran-module
 subroutine init_random_seed()
 
       INTEGER :: i, n, clock
@@ -26,39 +29,42 @@ subroutine init_random_seed()
 end subroutine
 
 !------------------------------------------------------------
-!This subrouotine finds the time of periastron passage
-!by knowing the transit time
+! This subroutine finds the time of periastron passage
+! by knowing the transit time
 !------------------------------------------------------------
 subroutine find_tp(t0, e, w, P, tp)
 implicit none
-!In/Out variables
+! In/Out variables
   double precision, intent(in) :: t0, e, w, P
   double precision, intent(out) :: tp
-!Local variables
+! Local variables
   double precision :: theta_p
   double precision :: ereal, eimag
   double precision :: pi = 3.1415926535897d0
 
-  !We know that the relation between theta_t0 = pi/2 - w
-  !We have to calculate the eccentric anomaly by knowing this
+  ! We know that the relation between theta_t0 = pi/2 - w
+  ! We have to calculate the eccentric anomaly by knowing this
   ereal = e + cos( pi / 2.d0  - w)
   eimag = sqrt( 1.d0 - e * e ) * sin( pi/ 2.d0  - w )
-  theta_p = atan2(eimag, ereal )
-  !Now we  have the eccentric anomaly, let us calcualte the mean anomaly
+  theta_p = atan2(eimag, ereal)
+  ! Now we have the eccentric anomaly, let us calculate the mean anomaly
   theta_p = theta_p - e * sin( theta_p )
-  !Time to talculate Tp
+  ! Time to talculate Tp
   tp = t0 - theta_p * p / 2.d0 / pi
 
 end subroutine
 
 !------------------------------------------------------------
-!This subroutine finds the true anomaly of an eccentric orbit
-!by using the Newton-Raphson (NR)  algorithm
-!The input parameters are:
-! man -> mean anomaly, ec -> eccentricity, delta -> NR limit
-! imax -> iteration limit for NR, dman -> man dimension
-!The output parameters are:
-! ta -> True anomaly (vector with the same dimension that man)
+! This subroutine finds the true anomaly of an eccentric orbit
+! by using the Newton-Raphson (NR) algorithm
+! The input parameters are:
+!   man -> mean anomaly, 
+!   ec -> eccentricity, 
+!   delta -> NR limit
+!   imax -> iteration limit for NR, 
+!   dman -> man dimension
+! The output parameters are:
+!   ta -> True anomaly (vector with the same dimension that man)
 !------------------------------------------------------------
 subroutine find_anomaly(t,t0,e,w,P,ta,dt)
 implicit none
@@ -76,46 +82,49 @@ implicit none
 end subroutine
 
 !------------------------------------------------------------
-!This subroutine finds the true anomaly of an eccentric orbit
-!by using the Newton-Raphson (NR)  algorithm
-!The input parameters are:
-! man -> mean anomaly, ec -> eccentricity, delta -> NR limit
-! imax -> iteration limit for NR, dman -> man dimension
-!The output parameters are:
-! ta -> True anomaly (vector with the same dimension that man)
+! This subroutine finds the true anomaly of an eccentric orbit
+! by using the Newton-Raphson (NR) algorithm
+! The input parameters are:
+!   man -> mean anomaly,
+!   ec -> eccentricity, 
+!   delta -> NR limit
+!   imax -> iteration limit for NR, 
+!   dman -> man dimension
+! The output parameters are:
+!   ta -> True anomaly (vector with the same dimension that man)
 !------------------------------------------------------------
 subroutine find_anomaly_tp(t,tp,e,P,ta,dt)
 implicit none
-!In/Out variables
+! In/Out variables
   integer, intent(in) :: dt
   double precision, intent(in) , dimension(0:dt-1) :: t
   double precision, intent(out), dimension(0:dt-1) :: ta
   double precision, intent(in) :: tp, e, P
-!Local variables
+! Local variables
   integer :: i,n
   double precision, dimension(0:dt-1) :: ma, f, df, eimag, ereal, sinma
   double precision :: two_pi = 2.d0*3.1415926535897932384626d0
   double precision :: uno
   double precision :: fmin=1.d-8, small = 1.d-5
   integer :: imax = int(1e8)
-!
+  
   uno = 1.0d0
 
-  !Calculate the mean anomaly
+  ! Calculate the mean anomaly
   ma = two_pi * ( t - tp ) / P
 
-  if ( e > small ) then !You have to calcuate your true anomaly, your orbit is not circular!
+  if ( e > small ) then ! You have to calculate your true anomaly, your orbit is not circular!
 
     sinma = sin(ma(:))
-    !make guesses based on the expantion
-    !Serie expantion, Murray and Dermott 1999, p.35
+    ! Make guesses based on the expantion
+    ! Serie expantion, Murray and Dermott 1999, p.35
     ta(:) = ma(:) + e  * ( sinma(:) + &
             e * ( 0.5d0 * sin(2.d0*ma(:)) +  &
             e * 0.125d0 * ( 3.d0 * sin( 3.d0 * ma(:) ) - sinma(:)  ) &
             ) )
 
-    !calculate the eccentric anomaly
-    !Using Newthon-Raphson algorithm
+    ! Calculate the eccentric anomaly
+    ! Using Newthon-Raphson algorithm
     f(:) = ta(:) - e * sin(ta(:)) - ma(:)
     n = 0
 
@@ -128,41 +137,43 @@ implicit none
       end do
     end do
 
-    if ( n > imax ) then !This should never happen!
+    if ( n > imax ) then ! This should never happen!
       print *, 'I am tired, too much Newton-Raphson for me!'
       print *, e, f
       stop
     end if
 
-    !calculate the true anomaly
-    !Relation between true anomaly(ta) and eccentric anomaly(ea) is
-    !tan(ta) = sqrt(1-e^2) sin (ea) / ( cos(ea) - e ) https://en.wikipedia.org/wiki/True_anomaly
-    !In a complex plane, this is =  (cos(ea) - e) + i (sqrt(1-e^2) *sin(ea) )
-    !with modulus = 1 - e cos(ea)
+    ! Calculate the true anomaly
+    ! Relation between true anomaly(ta) and eccentric anomaly(ea) is
+    ! tan(ta) = sqrt(1-e^2) sin (ea) / ( cos(ea) - e ) https://en.wikipedia.org/wiki/True_anomaly
+    ! In a complex plane, this is =  (cos(ea) - e) + i (sqrt(1-e^2) *sin(ea) )
+    ! with modulus = 1 - e cos(ea)
     eimag = ( sqrt(uno-e*e) * sin(ta) ) !/ (uno-e*cos(ta))
     ereal = ( cos (ta) - e ) !/ (uno-e*cos(ta))
-    !Therefore, the tue anomaly is
+    ! Therefore, the true anomaly is
     ta = atan2(eimag,ereal)
 
   else
 
-    !If your orbit is cirular, your true anomaly is the mean anomaly ;)
+    ! If your orbit is circular, your true anomaly is the mean anomaly ;)
     ta(:) = ma(:)
 
   end if
 
-
 end subroutine
 
-!Get semi-major axis assuming we know the stellar parameters
+!------------------------------------------------------------
+! This subroutine...
+! Get semi-major axis assuming we know the stellar parameters
+!------------------------------------------------------------
 subroutine get_a_scaled(mstar,rstar,P,a,lenvec)
 implicit none
 
-!In/Out variables
+! In/Out variables
   integer, intent(in) :: lenvec
   double precision, intent(in), dimension(0:lenvec-1) :: mstar, rstar, P
   double precision, intent(out), dimension(0:lenvec-1) :: a
-!Local variables
+! Local variables
   double precision :: pi = 3.1415926535897d0
   double precision :: S_radius_SI = 6.957d8 !R_sun
   double precision :: S_GM_SI = 1.3271244d20 ! G M_sun
@@ -171,14 +182,16 @@ implicit none
   R_SI  = rstar(:) * S_radius_SI
   GM_SI = mstar(:) * S_GM_SI
 
-  !Get scaled semi-major axis from 3rd Kepler law
+  ! Get scaled semi-major axis from 3rd Kepler law
   a(:) = 0.25d0 * GM_SI(:) * ( P * 24.d0 * 3600.d0 ) * ( P * 24.d0 * 3600.d0 )
   a(:) = a(:) / R_SI(:) / R_SI(:) / R_SI(:) / pi / pi 
   a(:) = a(:)**(1.d0/3.d0)
 
 end subroutine
 
-!Gelman and Rubin statistics
+!------------------------------------------------------------
+! Gelman and Rubin statistics
+!------------------------------------------------------------
 subroutine gr_test(par_chains,nchains,nconv,is_cvg)
 implicit none
   
@@ -214,7 +227,6 @@ implicit none
   B = nconv * B / ( nchains - 1 )
 
   !Estimated variance
-  !equation 11.4  Gelman et al., 2004, Bayesian Data Analysis, 3rd edition
   V = W - (W - B) / nconv
 
   !Potential scale reduction factor
@@ -224,8 +236,10 @@ implicit none
 
 end subroutine
 
-!Subroutine to get Z <- g(z)
-!Goodman & Weare, 2010 paper
+!------------------------------------------------------------
+! Subroutine to get Z <- g(z)
+! Goodman & Weare, 2010 paper
+!------------------------------------------------------------
 subroutine find_gz(a,z)
 implicit none
 
@@ -242,6 +256,9 @@ implicit none
 
 end subroutine
 
+!------------------------------------------------------------
+! This subroutine...
+!------------------------------------------------------------
 subroutine check_e(es,ec,is_good)
 implicit none
 
@@ -250,10 +267,13 @@ implicit none
 
   is_good = .true.
 
-  if ( .not. (es*es + ec*ec) < 1.d0  )  is_good = .false.
+  if ( .not. (es*es + ec*ec) < 1.d0  ) is_good = .false.
 
 end subroutine
 
+!------------------------------------------------------------
+! This subroutine check if u1 and u2 are a physical solution
+!------------------------------------------------------------
 subroutine check_us(u1,u2,is_good)
 implicit none
 
@@ -268,11 +288,13 @@ implicit none
     is_good = .false.
   else if ( u2 > 1.d0 .or. u2 < -1.0d0 ) then
     is_good = .false.
-   end if
+  end if
 
 end subroutine
 
-!Subroutine to create random integers between 0 and n
+!------------------------------------------------------------
+! Subroutine to create random integers between 0 and n
+!------------------------------------------------------------
 subroutine random_int(r_int,mnv,mxv)
 implicit none
 
@@ -294,7 +316,9 @@ implicit none
 
 end subroutine
 
-!Create a normal distribution based on Box-Muller
+!------------------------------------------------------------
+! Create a normal distribution based on Box-Muller
+!------------------------------------------------------------
 subroutine gauss_random_bm(mu,sigma,valor,n)
 implicit none
 
@@ -316,7 +340,9 @@ implicit none
 end subroutine
 
 
-
+!------------------------------------------------------------
+! This subroutine...
+!------------------------------------------------------------
 subroutine get_a_err(mstar_mean,mstar_sigma,rstar_mean,rstar_sigma,P,amean,aerr)
 implicit none
 
@@ -348,12 +374,17 @@ implicit none
   dadm = dadm * tercio / R_SI
 
   dadr = - ( G_SI * M_SI*per**2 / cpi2 )**(tercio) / R_SI**2
-
+  
+  !dadp = 0.d0
+  !aerr = dadm**2 * M_sigma_SI**2 + dadr**2 * R_sigma_SI**2 + dadp**2 * p_err**2
   aerr = dadm**2 * M_sigma_SI**2 + dadr**2 * R_sigma_SI**2
   aerr = sqrt(aerr)
 
 end subroutine
 
+!------------------------------------------------------------
+! This subroutine...
+!------------------------------------------------------------
 subroutine print_chain_data(chi2,n)
 implicit none
   integer, intent(in) :: n
@@ -371,6 +402,9 @@ implicit none
 
 end subroutine
 
+!------------------------------------------------------------
+! This subroutine...
+!------------------------------------------------------------
 subroutine uniform_chains(pars,npars,wtf,lims,pars_out)
 implicit none
 
@@ -397,6 +431,9 @@ implicit none
 
 end subroutine
 
+!------------------------------------------------------------
+! This subroutine...
+!------------------------------------------------------------
 subroutine create_chains(fit_pars,lims,pars_out,npars)
 implicit none
 
@@ -410,7 +447,7 @@ implicit none
 
   do j = 0, npars - 1
     if ( fit_pars(j) == 'f' ) then
-       pars_out(j) = lims(j*2)
+       pars_out(j) = lims(2*j)
     else if ( fit_pars(j) == 'u' ) then
       call random_number(r_real)
       pars_out(j) = lims(2*j+1) - lims(2*j)
