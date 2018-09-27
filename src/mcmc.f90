@@ -1,12 +1,12 @@
 subroutine mcmc_stretch_move( &
-           x_rv,y_rv,x_tr,y_tr,e_rv,e_tr,tlab,jrvlab, &  !Data vars
+           x_rv,y_rv,x_tr,y_tr,e_rv,e_tr,tlab,jrvlab, & !Data vars
            stellar_pars,afk,&                           !Stellar parameters and flag|
            flags, total_fit_flag,is_jit, &              !flags
            fit_all, fit_rvs, fit_ldc,fit_trends, &      !fitting controls
            nwalks, maxi, thin_factor, nconv, &          !mcmc evolution controls
            lims, lims_rvs, lims_ldc, &                  !prior limits
            n_cad, t_cad, &                              !cadence cotrols
-           npl, n_tel, n_jrv, &                          !planets and telescopes
+           npl, n_tel, n_jrv, &                         !planets and telescopes
            size_rv, size_tr &                           !data sizes
            )
 implicit none
@@ -200,7 +200,7 @@ implicit none
 
   chi2_red(:) = chi2_old_total(:) / dof
 
-  !Print the initial cofiguration
+  ! Print the initial cofiguration
   print *, ''
   print *, 'STARTING MCMC CALCULATION'
   if ( total_fit_flag(0) ) &
@@ -211,7 +211,7 @@ implicit none
   print *, 'dof            = ', int(dof)
   call print_chain_data(chi2_red,nwalks)
 
-  !Initialize the values
+  ! Initialize the values
   j = 1
   n = 0
   continua = .true.
@@ -219,26 +219,26 @@ implicit none
   n_burn = 1
   inverted = (/ 1 , 0 /)
 
-  !The infinite cycle starts!
+  ! The infinite cycle starts!
   print *, 'STARTING INFINITE LOOP!'
   do while ( continua )
 
-    !Creating the random variables
-    !Do the work for all the walkers
+    ! Creating the random variables
+    ! Do the work for all the walkers
     call random_number(r_rand)
 
-    !Perform the paralelization following Foreman-Mackey, 2013
+    ! Perform the paralelization following Foreman-Mackey, 2013
     do iensemble = 0, 1
 
       nks = iensemble * nwalks/2
       nke = (iensemble + 1) * nwalks/2 - 1
 
-      !Create random integers to be the index of the walks
-      !Note that r_ink(i) != i (avoid copy the same walker)
+      ! Create random integers to be the index of the walks
+      ! Note that r_ink(i) != i (avoid copy the same walker)
       call random_int(r_int,inverted(iensemble)*nwalks/2,(inverted(iensemble)+1)*nwalks/2 - 1)
 
 
-      !Pick a random walker from the complementary ensemble
+      ! Pick a random walker from the complementary ensemble
       do nk = nks, nke
         pars_new(nk,:)      = pars_old(r_int(nk-nks),:)
         rvs_new(nk,:)       = rvs_old(r_int(nk-nks),:)
@@ -248,17 +248,17 @@ implicit none
         jitter_tr_new(nk)   = jitter_tr_old(r_int(nk-nks))
       end do
 
-    !Paralellization calls
+    ! Paralellization calls
     !$OMP PARALLEL &
     !$OMP PRIVATE(is_limit_good,qq,m,limit_prior,a_mean,a_sigma)
     !$OMP DO SCHEDULE(DYNAMIC)
     do nk = nks, nke
 
-      !Generate the random step to perform the stretch move
+      ! Generate the random step to perform the stretch move
       call find_gz(a_factor,z_rand(nk))
 
-      !Perform the stretch move
-      !Eq. (7), Goodman & Weare (2010)
+      ! Perform the stretch move
+      ! Eq. (7), Goodman & Weare (2010)
       pars_new(nk,:)    = pars_new(nk,:) + wtf_all(:) * z_rand(nk) *   &
                         ( pars_old(nk,:) - pars_new(nk,:) )
       rvs_new(nk,:)     = rvs_new(nk,:) + wtf_rvs(:) * z_rand(nk) *    &
@@ -277,7 +277,7 @@ implicit none
 
       do m = 0, npl - 1
         if ( afk(m) ) then
-          !The parameter comes from 3rd Kepler law
+          ! The parameter comes from 3rd Kepler law
           call get_a_err(mstar_mean,mstar_sigma,rstar_mean,rstar_sigma,&
                pars_new(nk,1+8*m),a_mean(m),a_sigma(m))
           call gauss_prior(a_mean(m),a_sigma(m),pars_new(nk,5+8*m),priors_new(nk,5+8*m))
@@ -290,7 +290,7 @@ implicit none
 
       limit_prior = PRODUCT(priors_new(nk,:)) * PRODUCT(priors_ldc_new(nk,:) )
 
-      !Let us check if the new parameters are inside the limits
+      ! Let us check if the new parameters are inside the limits
       is_limit_good = .true.
       if ( limit_prior < 1.d-100 ) is_limit_good = .false.
       if ( is_limit_good ) then
@@ -318,13 +318,13 @@ implicit none
       log_likelihood_new(nk) = log_prior_new(nk) + log_likelihood_new(nk)
 
       qq = log_likelihood_new(nk) - log_likelihood_old(nk)
-      !z^(pars-1) normalization factor needed to perform the stretch move
-      !Goodman & Weare (2010)
+      ! z^(pars-1) normalization factor needed to perform the stretch move
+      ! Goodman & Weare (2010)
       qq = z_rand(nk)**spar1 * exp(qq)
 
-      !Check if the new likelihood is better
+      ! Check if the new likelihood is better
       if ( qq > r_rand(nk) ) then
-        !If yes, let us save it as the old vectors
+        ! If yes, let us save it as the old vectors
         log_likelihood_old(nk) = log_likelihood_new(nk)
         chi2_old_total(nk)     = chi2_new_total(nk)
         chi2_old_rv(nk)        = chi2_new_rv(nk)
@@ -339,18 +339,18 @@ implicit none
         priors_ldc_old(nk,:)   = priors_ldc_new(nk,:)
       end if
 
-    end do !walkers
+    end do ! walkers
     !$OMP END PARALLEL
 
     end do !iensemble
 
-    !Compute the reduced chi square
+    ! Compute the reduced chi square
     chi2_red(:) = chi2_old_total(:) / dof
 
     if ( mod(j,thin_factor) == 0 ) then
-      !If the chains have not converged, let us check convergence
-      !Let us save a 3D array with the informations of the parameters,
-      !the nk and the iteration. This array is used to perform GR test
+      ! If the chains have not converged, let us check convergence
+      ! Let us save a 3D array with the informations of the parameters,
+      ! the nk and the iteration. This array is used to perform GR test
       pars_chains(:,:,n)      = pars_old(:,:)
       chi2_rv_chains(:,n)     = chi2_old_rv(:)
       chi2_tr_chains(:,n)     = chi2_old_tr(:)
@@ -361,16 +361,16 @@ implicit none
       jitter_rv_chains(:,:,n) = jitter_rv_old(:,:)
       jitter_tr_chains(:,n)   = jitter_tr_old(:)
       n = n + 1
-      !Is it time to check covergence=
+      ! Is it time to check covergence=
       if ( n == nconv ) then
-        !Perform G-R test
+        ! Perform G-R test
         n = 0 !reinitilize n
         call print_chain_data(chi2_red,nwalks)
         print *, '=================================='
         print *, '     PERFOMING GELMAN-RUBIN'
         print *, '      TEST FOR CONVERGENCE'
         print *, '=================================='
-        !Check convergence for all the parameters
+        ! Check convergence for all the parameters
         is_cvg = .true.
         do o = 0, 8*npl-1
           if (wtf_all(o) == 1 ) then !perform G-R test
@@ -398,7 +398,7 @@ implicit none
       end if !nconv
     end if !j/thin_factor
 
-    !check if we exceed the maximum number of iterations
+    ! Check if we exceed the maximum number of iterations
     if ( j > maxi ) then
       print *, 'Maximum number of iteration reached!'
       continua = .FALSE.
@@ -406,10 +406,10 @@ implicit none
 
   j = j + 1
 
-  end do !infinite loop
-  !the MCMC part has ended
+  end do ! infinite loop
+  ! the MCMC part has ended
 
-  !Let us create the output file
+  ! Let us create the output file
   open(unit=101,file='all_data.dat',status='unknown')
   open(unit=201,file='jitter_data.dat',status='unknown')
   open(unit=301,file='trends_data.dat',status='unknown')
@@ -425,7 +425,7 @@ implicit none
     end do
   end do
 
-  !Close file
+  ! Close file
   close(101)
   close(201)
   close(301)
