@@ -10,7 +10,7 @@
 !-------------------------------------------------------------------------------
 ! This subroutine computes the radial velocity for a multiplanet system
 ! for a given set of values t.
-!The subroutine returns  a vector (rv of the same size that t)
+! The subroutine returns a vector (rv of the same size that t)
 ! by solving:
 !  rv = rv0 + k [ cos ( theta + w ) + e * cos ( w ) ]
 !  Where the parameters are the typical for a RV curve
@@ -23,40 +23,39 @@
 ! P(:)   -> Period of each planet
 ! e(:)   -> eccentricity of each planet
 ! w(:)   -> periastron passage of each planet
-!alpha   -> linear trend
-!beta    -> quadratic trend
-!rv(:)   -> set of RV meassurements
-!ts      -> size of t
-!npl     -> numper of planets
+! alpha  -> linear trend
+! beta   -> quadratic trend
+! rv(:)  -> set of RV meassurements
+! ts     -> size of t
+! npl    -> numper of planets
 !-------------------------------------------------------------------------------
 subroutine rv_curve_mp(t,rv0,t0,k,P,e,w,alpha,beta,rv,ts,npl)
 implicit none
 
-!In/Out variables
+! In/Out variables
   integer, intent(in) :: ts, npl
   double precision, intent(in), dimension(0:ts-1)  :: t
   double precision, intent(out), dimension(0:ts-1) :: rv
   double precision, intent(in), dimension(0:npl-1) :: k, t0, P, e, w
   double precision, intent(in) :: rv0, alpha, beta
-!Local variables
+! Local variables
   double precision, dimension(0:ts-1) :: ta
   integer :: i
-!External function
+! External function
   external :: find_anomaly
-!
 
-  !Added systemic velocity and linear and quadratic trends
+  ! Added systemic velocity and linear and quadratic trends
   rv(:) = rv0 + (t(:)-t0(0))*alpha + (t(:)-t0(0))**2*beta
 
-  !Now add the planet influence on the star
-  !each i is for a different planet
+  ! Now add the planet influence on the star
+  ! each i is for a different planet
   do i = 0, npl-1
-   !Obtain the true anomaly by using find_anomaly
+   ! Obtain the true anomaly by using find_anomaly
    call find_anomaly(t,t0(i),e(i),w(i),P(i),ta,ts)
-   !Now compute the RV for the planet i
+   ! Now compute the RV for the planet i
    rv(:) = rv(:) + k(i) * ( cos(ta(:) + w(i) ) + e(i) * cos(w(i)) )
   end do
-  !The final RV induced by all planets
+  ! The final RV induced by all planets
 
 end subroutine
 
@@ -65,15 +64,15 @@ end subroutine
 ! given a set of xd-yd data points
 ! It takes into acount the possible difference in systematic
 ! velocities for different telescopes.
-!Input parameters are:
-! xd, yd, errs -> set of data to fit (array(datas))
-! tlab -> Telescope labels (array of integers number)
-! rv0  -> array for the different systemic velocities,
+! Input parameters are:
+!   xd, yd, errs -> set of data to fit (array(datas))
+!   tlab -> Telescope labels (array of integers number)
+!   rv0  -> array for the different systemic velocities,
 !         its size is the number of telescopes
-! k, ec, w, t0, P -> typical planet parameters
-! datas, nt -> sizes of xd,yd, errs (datas) and rv0(nt)  
-!Output parameter:
-! chi2 -> a double precision value with the chi2 value
+!   k, ec, w, t0, P -> typical planet parameters
+!   datas, nt -> sizes of xd,yd, errs (datas) and rv0(nt)  
+! Output parameter:
+!   chi2 -> a double precision value with the chi2 value
 !-----------------------------------------------------------
 subroutine find_chi2_rv(xd,yd,errs,tlab,jrvlab,params,jitter,flag,chi2,datas,nt,nj,npl)
 implicit none
