@@ -1,8 +1,14 @@
 
-#Print the values
+#-----------------------------------------------------------
+#                    output.py
+# This file generate all results obtained from the MCMC analysis.
+#        Oscar Barragan, MMM, YYYY
+#-----------------------------------------------------------
+
+# Print the values
 execfile('src/print_values.py')
 
-#Create plots
+# Create plots
 execfile('src/plot_data.py')
 
 if ( is_plot_chains ):
@@ -17,13 +23,13 @@ else:
   if ( is_plot_correlations ):
     plot_correlations()
 
- #PLOT TRANSIT
+# PLOT TRANSIT
 if ( total_tr_fit ):
   plot_transit_nice()
   plot_all_transits()
   clean_transits(sigma_clean)
 
-#PLOT RV CURVE
+# PLOT RV CURVE
 if ( total_rv_fit ):
   plot_rv_all_data()
   plot_rv_mp()
